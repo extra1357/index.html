@@ -1,0 +1,361 @@
+// App.js - React Native Gun Shot Detector
+import React, {useState, useEffect, useRef} from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+  PermissionsAndroid,
+  Platform,
+  Vibration,
+  BackgroundJob,
+  DeviceEventEmitter,
+} from 'react-native';
+import Sound from 'react-native-sound';
+import AudioRecord from 'react-native-audio-record';
+
+const App = () => {
+  const [isListening, setIsListening] = useState(false);
+  const [status, setStatus] = useState('SEGURO');
+  const [batteryLevel, setBatteryLevel] = useState(85);
+  const [audioData, setAudioData] = useState([]);
+  
+  const audioRecordRef = useRef(null);
+
+  useEffect(() => {
+    requestPermissions();
+    setupAudioRecord();
+    updateBattery();
+    
+    return () => {
+      if (audioRecordRef.current) {
+        AudioRecord.stop();
+      }
+    };
+  }, []);
+
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const grants = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        ]);
+
+        if (
+          grants['android.permission.RECORD_AUDIO'] === PermissionsAndroid.RESULTS.GRANTED &&
+          grants['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('Permissões concedidas');
+        } else {
+          Alert.alert('Erro', 'Permissões necessárias não foram concedidas');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  };
+
+  const setupAudioRecord = () => {
+    const options = {
+      sampleRate: 16000,
+      channels: 1,
+      bitsPerSample: 16,
+      audioSource: 6, // VOICE_RECOGNITION
+      wavFile: 'gunshot_detection.wav',
+    };
+
+    AudioRecord.init(options);
+  };
+
+  const startDetection = async () => {
+    try {
+      setIsListening(true);
+      setStatus('MONITORANDO');
+      
+      AudioRecord.start();
+      
+      // Simula análise de áudio em tempo real
+      const interval = setInterval(() => {
+        if (!isListening) {
+          clearInterval(interval);
+          return;
+        }
+        
+        // Simula detecção de disparo (em produção seria análise real do áudio)
+        const randomDetection = Math.random() < 0.01; // 1% chance para demo
+        
+        if (randomDetection) {
+          triggerAlert();
+          clearInterval(interval);
+        }
+        
+        // Atualiza visualização de áudio (dados simulados)
+        const newAudioData = Array.from({length: 20}, () => Math.random() * 100);
+        setAudioData(newAudioData);
+        
+      }, 100); // Análise a cada 100ms
+      
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível iniciar a detecção: ' + error.message);
+      setIsListening(false);
+      setStatus('SEGURO');
+    }
+  };
+
+  const stopDetection = () => {
+    setIsListening(false);
+    setStatus('SEGURO');
+    AudioRecord.stop();
+    setAudioData([]);
+  };
+
+  const triggerAlert = () => {
+    setStatus('PERIGO!');
+    
+    // Alerta visual
+    Alert.alert(
+      '⚠️ PERIGO!',
+      'DISPARO DE ARMA DE FOGO DETECTADO\n\nMANTENHA-SE EM LOCAL SEGURO',
+      [
+        {text: 'OK', onPress: () => setStatus('MONITORANDO')}
+      ],
+      {cancelable: false}
+    );
+    
+    // Vibração
+    Vibration.vibrate([200, 100, 200, 100, 200]);
+    
+    // Som de alerta
+    playAlertSound();
+  };
+
+  const playAlertSound = () => {
+    // Cria som de alerta (você pode adicionar um arquivo .wav/.mp3)
+    Sound.setCategory('Playback');
+    
+    const alertSound = new Sound('alert.wav', Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('Erro ao carregar som:', error);
+        return;
+      }
+      alertSound.play();
+    });
+  };
+
+  const updateBattery = () => {
+    setInterval(() => {
+      setBatteryLevel(prev => {
+        const consumption = isListening ? 0.1 : 0.02;
+        return Math.max(0, prev - consumption);
+      });
+    }, 60000); // Atualiza a cada minuto
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'SEGURO': return '#4ecdc4';
+      case 'MONITORANDO': return '#f093fb';
+      case 'PERIGO!': return '#ff416c';
+      default: return '#4ecdc4';
+    }
+  };
+
+  const AudioVisualizer = () => (
+    <View style={styles.visualizer}>
+      <Text style={styles.visualizerTitle}>Monitor de Frequência</Text>
+      <View style={styles.frequencyBars}>
+        {audioData.map((value, index) => (
+          <View
+            key={index}
+            style={[
+              styles.frequencyBar,
+              {
+                height: Math.max(5, value * 0.8),
+                backgroundColor: value > 80 ? '#ff416c' : value > 40 ? '#f093fb' : '#667eea'
+              }
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={[styles.appIcon, {backgroundColor: getStatusColor()}]}>
+          <Text style={styles.iconText}>🛡️</Text>
+        </View>
+        <Text style={styles.title}>Gun Shot Detector</Text>
+        <Text style={styles.subtitle}>Proteção Inteligente de Áudio</Text>
+      </View>
+
+      <View style={styles.statusSection}>
+        <View style={[styles.statusIndicator, {backgroundColor: getStatusColor()}]}>
+          <Text style={styles.statusIcon}>
+            {status === 'SEGURO' ? '✓' : status === 'MONITORANDO' ? '👂' : '⚠️'}
+          </Text>
+        </View>
+        <Text style={styles.statusText}>{status}</Text>
+        <Text style={styles.statusDescription}>
+          {status === 'SEGURO' 
+            ? 'Sistema em standby - Monitoramento inativo'
+            : status === 'MONITORANDO'
+            ? 'Sistema ativo - Analisando frequências de áudio'
+            : 'DISPARO DE ARMA DE FOGO DETECTADO'
+          }
+        </Text>
+      </View>
+
+      <View style={styles.controls}>
+        <TouchableOpacity
+          style={[styles.btn, styles.btnPrimary, {opacity: isListening ? 0.5 : 1}]}
+          onPress={startDetection}
+          disabled={isListening}>
+          <Text style={styles.btnText}>INICIAR</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.btn, styles.btnDanger, {opacity: !isListening ? 0.5 : 1}]}
+          onPress={stopDetection}
+          disabled={!isListening}>
+          <Text style={styles.btnText}>PARAR</Text>
+        </TouchableOpacity>
+      </View>
+
+      {isListening && <AudioVisualizer />}
+
+      <View style={styles.batteryInfo}>
+        <Text style={styles.batteryText}>
+          Consumo: {isListening ? 'Alto' : 'Baixo'}
+        </Text>
+        <Text style={styles.batteryText}>
+          Bateria: {Math.round(batteryLevel)}%
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1a1a2e',
+    padding: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+    marginTop: 50,
+  },
+  appIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  iconText: {
+    fontSize: 30,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#a0a0a0',
+  },
+  statusSection: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 15,
+    padding: 25,
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  statusIndicator: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  statusIcon: {
+    fontSize: 40,
+    color: '#fff',
+  },
+  statusText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 10,
+  },
+  statusDescription: {
+    fontSize: 14,
+    color: '#b0b0b0',
+    textAlign: 'center',
+  },
+  controls: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 25,
+  },
+  btn: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  btnPrimary: {
+    backgroundColor: '#667eea',
+  },
+  btnDanger: {
+    backgroundColor: '#ff416c',
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  visualizer: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 25,
+  },
+  visualizerTitle: {
+    color: '#a0a0a0',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  frequencyBars: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    height: 80,
+    gap: 2,
+  },
+  frequencyBar: {
+    width: 8,
+    borderRadius: 4,
+    minHeight: 5,
+  },
+  batteryInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  batteryText: {
+    fontSize: 12,
+    color: '#a0a0a0',
+  },
+});
+
+export default App;
