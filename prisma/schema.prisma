@@ -1,0 +1,414 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Lead {
+  id              String      @id @default(uuid())
+  nome            String
+  email           String
+  telefone        String
+  origem          String      @default("site")
+  status          String      @default("novo")
+  dataCaptcha     DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  corretorId      String?
+  dataPreferencia String?
+  imovelInteresse String?
+  mensagem        String?
+  alugueis        Aluguel[]
+  consultas       Consulta[]
+  historicos      Historico[]
+  corretor        Corretor?   @relation(fields: [corretorId], references: [id])
+  vendas          Venda[]
+
+  @@index([email])
+  @@index([status])
+  @@index([origem])
+  @@index([corretorId])
+  @@map("leads")
+}
+
+model Historico {
+  id       String   @id @default(uuid())
+  detalhes String
+  tipo     String
+  data     DateTime @default(now())
+  leadId   String
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([data])
+  @@map("historicos_atendimento")
+}
+
+model Imovel {
+  id              String       @id @default(uuid())
+  tipo            String
+  endereco        String
+  cidade          String
+  estado          String
+  preco           Decimal      @db.Decimal(12, 2)
+  metragem        Decimal      @db.Decimal(10, 2)
+  descricao       String?
+  disponivel      Boolean      @default(true)
+  proprietarioId  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  imagens         String[]     @default([])
+  status          String       @default("ATIVO")
+  bairro          String?
+  banheiros       Int          @default(0)
+  caracteristicas String[]     @default([])
+  cep             String?
+  codigo          String?      @unique
+  destaque        Boolean      @default(false)
+  finalidade      String       @default("venda")
+  precoAluguel    Decimal?     @db.Decimal(10, 2)
+  quartos         Int          @default(0)
+  suites          Int          @default(0)
+  vagas           Int          @default(0)
+  slug            String?      @unique
+  corretorId      String?
+  corretor        Corretor?    @relation("ImovelCorretor", fields: [corretorId], references: [id])
+  alugueis        Aluguel[]
+  consultas       Consulta[]
+  proprietario    Proprietario @relation(fields: [proprietarioId], references: [id], onDelete: Cascade)
+  vendas          Venda[]
+
+  @@index([cidade])
+  @@index([estado])
+  @@index([disponivel])
+  @@index([tipo])
+  @@index([finalidade])
+  @@index([status])
+  @@index([proprietarioId])
+  @@index([corretorId])
+  @@map("imoveis")
+}
+
+model Proprietario {
+  id          String    @id @default(uuid())
+  nome        String
+  telefone    String
+  email       String    @unique
+  cpf         String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  cnpj        String?   @unique
+  endereco    String?
+  observacoes String?
+  tipo        String    @default("PF")
+  alugueis    Aluguel[]
+  imoveis     Imovel[]
+  vendas      Venda[]
+
+  @@index([email])
+  @@index([cpf])
+  @@index([cnpj])
+  @@map("proprietarios")
+}
+
+model Corretor {
+  id             String     @id @default(uuid())
+  nome           String
+  email          String     @unique
+  telefone       String
+  cpf            String?    @unique
+  creci          String     @unique
+  dataAdmissao   DateTime   @default(now())
+  dataDemissao   DateTime?
+  ativo          Boolean    @default(true)
+  banco          String?
+  agencia        String?
+  conta          String?
+  tipoConta      String?
+  pix            String?
+  comissaoPadrao Decimal    @default(50) @db.Decimal(5, 2)
+  foto           String?
+  observacoes    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  alugueis       Aluguel[]
+  imoveisCorretor Imovel[]   @relation("ImovelCorretor")
+  comissoes      Comissao[]
+  consultas      Consulta[]
+  leads          Lead[]
+  usuario        Usuario?
+  vendas         Venda[]
+
+  @@index([email])
+  @@index([creci])
+  @@index([ativo])
+  @@map("corretores")
+}
+
+model Comissao {
+  id            String    @id @default(uuid())
+  corretorId    String
+  vendaId       String?
+  aluguelId     String?
+  tipo          String
+  valorBase     Decimal   @db.Decimal(12, 2)
+  percentual    Decimal   @db.Decimal(5, 2)
+  valorComissao Decimal   @db.Decimal(10, 2)
+  status        String    @default("pendente")
+  dataPrevista  DateTime?
+  dataPagamento DateTime?
+  observacoes   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  aluguel       Aluguel?  @relation(fields: [aluguelId], references: [id])
+  corretor      Corretor  @relation(fields: [corretorId], references: [id])
+  venda         Venda?    @relation(fields: [vendaId], references: [id])
+
+  @@index([corretorId])
+  @@index([vendaId])
+  @@index([aluguelId])
+  @@index([status])
+  @@index([dataPrevista])
+  @@map("comissoes")
+}
+
+model Venda {
+  id                  String       @id @default(uuid())
+  imovelId            String
+  leadId              String
+  proprietarioId      String
+  corretorId          String
+  valorVenda          Decimal      @db.Decimal(12, 2)
+  valorEntrada        Decimal?     @db.Decimal(12, 2)
+  valorFinanciado     Decimal?     @db.Decimal(12, 2)
+  percentualComissao  Decimal      @default(6) @db.Decimal(5, 2)
+  valorComissao       Decimal      @db.Decimal(10, 2)
+  dataPropostaInicial DateTime     @default(now())
+  dataAssinatura      DateTime?
+  dataEscritura       DateTime?
+  dataRegistro        DateTime?
+  status              String       @default("proposta")
+  formaPagamento      String?
+  bancoFinanciamento  String?
+  observacoes         String?
+  documentos          String[]     @default([])
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  comissoes           Comissao[]
+  corretor            Corretor     @relation(fields: [corretorId], references: [id])
+  imovel              Imovel       @relation(fields: [imovelId], references: [id])
+  lead                Lead         @relation(fields: [leadId], references: [id])
+  proprietario        Proprietario @relation(fields: [proprietarioId], references: [id])
+
+  @@index([imovelId])
+  @@index([leadId])
+  @@index([corretorId])
+  @@index([status])
+  @@index([dataAssinatura])
+  @@map("vendas")
+}
+
+model Aluguel {
+  id                  String             @id @default(uuid())
+  imovelId            String
+  inquilinoId         String
+  proprietarioId      String
+  corretorId          String
+  valorAluguel        Decimal            @db.Decimal(10, 2)
+  valorCondominio     Decimal?           @db.Decimal(10, 2)
+  valorIPTU           Decimal?           @db.Decimal(10, 2)
+  valorTotal          Decimal            @db.Decimal(10, 2)
+  tipoGarantia        String?
+  valorGarantia       Decimal?           @db.Decimal(10, 2)
+  dataInicio          DateTime
+  dataFim             DateTime
+  diaVencimento       Int                @default(10)
+  indiceReajuste      String             @default("IGPM")
+  dataProximoReajuste DateTime?
+  taxaAdministracao   Decimal            @default(10) @db.Decimal(5, 2)
+  status              String             @default("ativo")
+  observacoes         String?
+  documentos          String[]           @default([])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  corretor            Corretor           @relation(fields: [corretorId], references: [id])
+  imovel              Imovel             @relation(fields: [imovelId], references: [id])
+  inquilino           Lead               @relation(fields: [inquilinoId], references: [id])
+  proprietario        Proprietario       @relation(fields: [proprietarioId], references: [id])
+  comissoes           Comissao[]
+  pagamentos          PagamentoAluguel[]
+
+  @@index([imovelId])
+  @@index([inquilinoId])
+  @@index([proprietarioId])
+  @@index([corretorId])
+  @@index([status])
+  @@index([dataFim])
+  @@map("alugueis")
+}
+
+model PagamentoAluguel {
+  id              String    @id @default(uuid())
+  aluguelId       String
+  competencia     String
+  dataVencimento  DateTime
+  dataPagamento   DateTime?
+  valorAluguel    Decimal   @db.Decimal(10, 2)
+  valorCondominio Decimal?  @db.Decimal(10, 2)
+  valorIPTU       Decimal?  @db.Decimal(10, 2)
+  valorMulta      Decimal?  @db.Decimal(10, 2)
+  valorJuros      Decimal?  @db.Decimal(10, 2)
+  valorTotal      Decimal   @db.Decimal(10, 2)
+  status          String    @default("pendente")
+  formaPagamento  String?
+  comprovante     String?
+  observacoes     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  aluguel         Aluguel   @relation(fields: [aluguelId], references: [id], onDelete: Cascade)
+
+  @@index([aluguelId])
+  @@index([competencia])
+  @@index([status])
+  @@index([dataVencimento])
+  @@map("pagamentos_aluguel")
+}
+
+model Consulta {
+  id                 String    @id @default(uuid())
+  leadId             String
+  imovelId           String
+  data               DateTime  @default(now())
+  resultado          String?
+  tipo               String    @default("visita")
+  status             String    @default("agendada")
+  observacoes        String?
+  comissao           Decimal?  @db.Decimal(10, 2)
+  createdAt          DateTime  @default(now())
+  dataFechamento     DateTime?
+  motivoCancelamento String?
+  updatedAt          DateTime  @updatedAt
+  valorProposta      Decimal?  @db.Decimal(12, 2)
+  corretorId         String?
+  dataAgendada       DateTime?
+  corretor           Corretor? @relation(fields: [corretorId], references: [id])
+  imovel             Imovel    @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  lead               Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([data])
+  @@index([status])
+  @@index([leadId])
+  @@index([imovelId])
+  @@index([corretorId])
+  @@map("consultas")
+}
+
+model AnaliseMercado {
+  id          String      @id @default(uuid())
+  cidade      String
+  estado      String      @default("SP")
+  valorM2     Decimal     @db.Decimal(10, 2)
+  valorMinimo Decimal?    @db.Decimal(12, 2)
+  valorMaximo Decimal?    @db.Decimal(12, 2)
+  dataAnalise DateTime    @default(now())
+  fonte       String
+  tendencia   String?
+  observacoes String?
+  relatorios  Relatorio[]
+
+  @@index([cidade])
+  @@index([estado])
+  @@index([dataAnalise])
+  @@map("analises_mercado")
+}
+
+model Relatorio {
+  id          String          @id @default(uuid())
+  titulo      String
+  tipo        String
+  conteudo    String
+  dataGeracao DateTime        @default(now())
+  periodo     String?
+  geradoPor   String?
+  analiseId   String?
+  analise     AnaliseMercado? @relation(fields: [analiseId], references: [id])
+
+  @@index([tipo])
+  @@index([dataGeracao])
+  @@index([analiseId])
+  @@map("relatorios")
+}
+
+model Usuario {
+  id               String    @id @default(uuid())
+  nome             String
+  email            String    @unique
+  senha            String
+  ativo            Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  atualizadoPor    String?
+  bloqueadoAte     DateTime?
+  corretorId       String?   @unique
+  criadoPor        String?
+  permissoesCustom String?
+  tentativasLogin  Int       @default(0)
+  ultimoLogin      DateTime?
+  role             Role      @default(VISUALIZADOR)
+  resetToken       String?   @db.VarChar(255)
+  resetTokenExpira DateTime?
+  corretor         Corretor? @relation(fields: [corretorId], references: [id])
+
+  @@index([email])
+  @@index([role])
+  @@index([ativo])
+  @@map("usuarios")
+}
+
+model Auditoria {
+  id         String   @id @default(uuid())
+  acao       String
+  tabela     String
+  registroId String?
+  usuario    String   @default("sistema")
+  dados      String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([acao])
+  @@index([tabela])
+  @@index([usuario])
+  @@index([createdAt])
+  @@map("auditorias")
+}
+
+model LogPermissao {
+  id        String   @id @default(uuid())
+  usuarioId String?
+  acao      String
+  recurso   String
+  ip        String?
+  userAgent String?
+  detalhes  String?
+  createdAt DateTime @default(now())
+
+  @@index([usuarioId])
+  @@index([acao])
+  @@index([createdAt])
+  @@map("logs_permissoes")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  GERENTE
+  CORRETOR
+  ASSISTENTE
+  VISUALIZADOR
+}

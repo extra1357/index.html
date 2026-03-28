@@ -1,0 +1,36 @@
+import Link from 'next/link'
+
+export default function Navbar() {
+  return (
+    <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="text-2xl font-bold hover:text-blue-200 transition">
+            🏢 STR
+          </Link>
+          
+          <div className="hidden md:flex items-center space-x-1">
+            <Link href="/dashboard" className="px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+              Dashboard
+            </Link>
+            <Link href="/leads" className="px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+              Leads
+            </Link>
+            <Link href="/imoveis" className="px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+              Imóveis
+            </Link>
+            <Link href="/proprietarios" className="px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+              Proprietários
+            </Link>
+            <Link href="/consultas" className="px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+              Consultas
+            </Link>
+            <Link href="/analise-mercado" className="px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+              Análises
+            </Link>
+          </div>
+        </div>
+      </div>
+    </nav>
+  )
+}

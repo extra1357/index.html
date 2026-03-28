@@ -1,0 +1,29 @@
+node_modules
+.next
+.env
+.env.local
+*.log
+.DS_Store
+*.deb
+google-chrome-stable_current_amd64.deb
+
+# Backups
+backups/
+backup_*/
+*.backup
+
+# Arquivos temporários de correção
+*-URGENTE.*
+temp_*
+tmp_*
+
+# Credenciais
+connection_string.txt
+
+# Logs de scripts
+scripts/**/*.log
+.vercel
+.env*.local
+
+.vercel
+.env*.local

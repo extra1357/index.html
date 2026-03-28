@@ -1,0 +1,127 @@
+# ============================================================
+# robots.txt — Imobiliária Perto
+# https://www.imobiliariaperto.com.br
+# Atualizado: 2026-03-25
+# ============================================================
+
+# ------------------------------------------------------------
+# GOOGLEBOT — Rastreamento principal
+# ------------------------------------------------------------
+User-Agent: Googlebot
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image/
+Allow: /public/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /proprietarios/dashboard/
+Disallow: /*?*utm_
+Disallow: /*?*fbclid
+Disallow: /*?*gclid
+Crawl-delay: 0
+
+# ------------------------------------------------------------
+# GOOGLEBOT-IMAGE — Indexação de imagens dos imóveis
+# ------------------------------------------------------------
+User-Agent: Googlebot-Image
+Allow: /
+Allow: /public/
+Allow: /_next/image/
+Disallow: /admin/
+Disallow: /proprietarios/dashboard/
+
+# ------------------------------------------------------------
+# BINGBOT — Rastreamento secundário
+# ------------------------------------------------------------
+User-Agent: Bingbot
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /proprietarios/dashboard/
+Disallow: /*?*utm_
+Crawl-delay: 1
+
+# ------------------------------------------------------------
+# YANDEX — Rastreamento internacional
+# ------------------------------------------------------------
+User-Agent: YandexBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /proprietarios/dashboard/
+Crawl-delay: 2
+
+# ------------------------------------------------------------
+# TODOS OS OUTROS BOTS — Regra geral
+# ------------------------------------------------------------
+User-Agent: *
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image/
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /api/*
+Disallow: /proprietarios/dashboard/
+Disallow: /proprietarios/dashboard/*
+Disallow: /*?*utm_
+Disallow: /*?*fbclid
+Disallow: /*?*gclid
+Disallow: /*?*ref=
+Crawl-delay: 2
+
+# ------------------------------------------------------------
+# BOTS MALICIOSOS E SCRAPERS — Bloqueio total
+# ------------------------------------------------------------
+User-Agent: AhrefsBot
+Disallow: /
+
+User-Agent: SemrushBot
+Disallow: /
+
+User-Agent: DotBot
+Disallow: /
+
+User-Agent: MJ12bot
+Disallow: /
+
+User-Agent: BLEXBot
+Disallow: /
+
+User-Agent: DataForSeoBot
+Disallow: /
+
+User-Agent: PetalBot
+Disallow: /
+
+User-Agent: AspiegelBot
+Disallow: /
+
+User-Agent: Bytespider
+Disallow: /
+
+User-Agent: GPTBot
+Disallow: /
+
+User-Agent: CCBot
+Disallow: /
+
+User-Agent: ChatGPT-User
+Disallow: /
+
+User-Agent: Google-Extended
+Disallow: /
+
+User-Agent: anthropic-ai
+Disallow: /
+
+User-Agent: ClaudeBot
+Disallow: /
+
+# ------------------------------------------------------------
+# DIRETIVAS GLOBAIS
+# ------------------------------------------------------------
+Host: https://www.imobiliariaperto.com.br
+Sitemap: https://www.imobiliariaperto.com.br/sitemap.xml
