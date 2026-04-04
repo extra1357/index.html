@@ -1,0 +1,64 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../app/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  nome      String
+  email     String    @unique
+  senha     String
+  whatsapp  String?
+  documento String    @unique
+  tipDoc    String    @default("CPF")
+  cidade    String?
+  estado    String?
+  plano     String    @default("gratis")
+  ativo     Boolean   @default(true)
+  criadoEm DateTime  @default(now())
+  anuncios  Anuncio[]
+}
+
+model Anuncio {
+  id            String    @id @default(uuid())
+  titulo        String
+  categoria     String
+  marca         String
+  modelo        String
+  versao        String?
+  anoFab        Int
+  anoMod        Int
+  km            Int
+  combustivel   String
+  cambio        String
+  cor           String
+  portas        Int?
+  blindado      Boolean   @default(false)
+  financiamento Boolean   @default(true)
+  troca         Boolean   @default(false)
+  preco         Float
+  fipe          Float?
+  placa         String?
+  descricao     String?
+  plano         String    @default("gratis")
+  ativo         Boolean   @default(true)
+  destaque      Boolean   @default(false)
+  criadoEm      DateTime  @default(now())
+  expiraEm      DateTime?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  fotos         Foto[]
+}
+
+model Foto {
+  id        String  @id @default(uuid())
+  url       String
+  capa      Boolean @default(false)
+  anuncioId String
+  anuncio   Anuncio @relation(fields: [anuncioId], references: [id])
+}
